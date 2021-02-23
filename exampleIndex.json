@@ -1,0 +1,19 @@
+{
+   "pl_title":"testPl",
+   "pl_id":"d32rn9",
+   "pl_url":"https://music.youtube.com/playlist?list=PLOZdhr4iu",
+   "songs":[
+      {
+         "title":"test",
+         "file":"file.mp4",
+         "id":"j43hrjkn",
+		 "url":"https://muscic.youtube.com/watch?v=j43hrjkn"
+      },
+      {
+         "title":"test2",
+         "file":"file2.mp4",
+         "id":"4a23eh",
+		 "url":"https://muscic.youtube.com/watch?v=4a23eh"
+      }
+   ]
+}
