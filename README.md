@@ -49,7 +49,7 @@ sudo apt-get install ffmpeg
 
 ### Beispiel
 
-![Beispiel](C:\Users\Benedikt\Projekte\YoutubeAPI2\Beispiel.svg)
+![Beispiel](Beispiel.svg "Erklärbild")
 
 Song 3 Löschen, Song 5 Runterladen und Online zu neuem Offline-Index machen.
 
