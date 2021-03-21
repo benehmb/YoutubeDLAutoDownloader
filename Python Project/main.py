@@ -9,8 +9,9 @@ import os
 import sys, getopt
 
 # Public variable
-index_file_name = "index.json"
-default_song_folder = "downloadedSongs"
+index_file_name:str = "index.json"
+default_song_folder:str = "downloadedSongs"
+audio_format:str = "mp3"
 
 # Helper
 # hook for Progress-viewing. Not used at the moment
@@ -23,15 +24,15 @@ def output(metadata):
     if metadata.get("_type", None) == "playlist":
         # Some console output
         for info in metadata['entries']:
-            video_url = info.get("url", None)
-            video_id = info.get("id", None)
-            video_title = info.get("title", None)
+            video_url:str = info.get("url", None)
+            video_id:str = info.get("id", None)
+            video_title:str = info.get("title", None)
             print(f"Title: {video_title}, URL: {video_url}, id: {video_id}")
             print(info)
     else:
-        video_url = metadata.get("url", None)
-        video_id = metadata.get("id", None)
-        video_title = metadata.get("title", None)
+        video_url:str = metadata.get("url", None)
+        video_id:str = metadata.get("id", None)
+        video_title:str = metadata.get("title", None)
         print(f"Title: {video_title}, URL: {video_url}, id: {video_id}")
 
 # Creates json to output
@@ -45,7 +46,7 @@ def create_json(metadata):
     for song in metadata['entries']:
         data['songs'].append({
             'title': song.get("title", None),
-            'file': f'{song.get("title", None)}.{song.get("ext", None)}',
+            'file': f'{song.get("title", None)}-{song.get("uploader", None)}.{song.get("ext", None)}',
             'id': song.get("id", None),
             'url': song.get("webpage_url", None)
         })
@@ -55,38 +56,52 @@ def create_json(metadata):
 
 
 # Method: get all items of Playlist as Object (not downloaded) or get Song-Info
-def get_song_or_playlist(param_playlist):
-    ydl_opts = {
+def get_song_or_playlist(param_playlist:str) -> dict:
+    ydl_opts:dict = {
         'format': 'bestaudio/best',
+        'audioformat': audio_format,
+        'extractaudio': True,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': audio_format,
+            'preferredquality': '192',
+        }]
     }
     # Getting Playlists, but only parse items / nod downloading
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:  # ToDo try catch if Playlist ist private / not existent
         return ydl.extract_info(param_playlist, download=False)
 
 # Actually download array of songs into folder
-def download_songs(urls, output_folder):
-    ydl_opts = {
+def download_songs(urls:list, output_folder:str):
+    ydl_opts:dict = {
         'format': 'bestaudio/best',
+        'audioformat': audio_format,
+        'extractaudio': True,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': audio_format,
+            'preferredquality': '192',
+        }],
         'progress_hooks': [my_hook],
-        'outtmpl': f'{output_folder}/%(title)s.%(ext)s'
+        'outtmpl': f'{output_folder}/%(title)s-%(uploader)s.{audio_format}' #f'{output_folder}/%(title)s.%(ext)s'
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download(url_list=urls)
 
 # Delete array of songs
-def delete_songs(songs_to_delete, output_folder):
+def delete_songs(songs_to_delete:list, output_folder:str):
     for song_to_delete in songs_to_delete:
         os.remove(f'{output_folder}/{song_to_delete["file"]}')
 
 # Compare download-List with Metadata; returns: songs_to_download: array of direct URLS to songs, songs_to_delete: array of song_of_index
-def compare_with_index(metadata, index_file):
+def compare_with_index(metadata:dict, index_file:str) -> tuple:
     # Create empty songs_to_download and songs_to_delete array
-    songs_to_download = []
-    songs_to_delete = []
+    songs_to_download:list = []
+    songs_to_delete:list = []
     # If exists, parse json and find out songs_to_download to parse and write new content in file
     # Open index-file
     with open(index_file) as json_file:
-        index_object = json.load(json_file)
+        index_object:dict = json.load(json_file)
         # Check for each song in metadata if it exists
         for song_of_metadata in metadata['entries']:
             if next((song_of_index for song_of_index in index_object['songs'] if song_of_index['id'] == song_of_metadata.get('id', None)), None) \
@@ -107,33 +122,33 @@ def compare_with_index(metadata, index_file):
 # do main functions
 def compare_and_download(url:str, p_output_dir:str=None, p_index_file_path:str=None):
     # get song or playlist
-    meta = get_song_or_playlist(param_playlist=url)
+    meta:dict = get_song_or_playlist(param_playlist=url)
     # do some console-output
     output(metadata=meta)
     # Create empty arrays to store values in it
-    songs_to_download = []
-    songs_to_delete = []
+    songs_to_download:list = []
+    songs_to_delete:list = []
 
     # check which type is given
     if meta.get("_type", None) == "playlist":
 
         # normalise path only of output-dir is set
         if p_output_dir:
-            p_output_dir = os.path.normpath(p_output_dir)
-            folder_name = f'{p_output_dir}/{meta.get("title", None)}'
+            p_output_dir:str = os.path.normpath(p_output_dir)
+            folder_name:str= f'{p_output_dir}/{meta.get("title", None)}'
         else:
-            folder_name = meta.get("title", None)
+            folder_name:str = meta.get("title", None)
         # Add playlist to songs_to_download and songs_to_delete if needed
 
 
         # Check if p_index_file_path is given, else set it to default
-        index_file_path=os.path.normpath(p_index_file_path) if p_index_file_path else f'{folder_name}/{index_file_name}'
+        index_file_path:str=os.path.normpath(p_index_file_path) if p_index_file_path else f'{folder_name}/{index_file_name}'
 
         # Find out if index-file exists
         if os.path.exists(index_file_path):
-            songs = compare_with_index(metadata=meta, index_file=index_file_path)
-            songs_to_download = songs[0]
-            songs_to_delete = songs[1]
+            songs:tuple = compare_with_index(metadata=meta, index_file=index_file_path)
+            songs_to_download:list = songs[0]
+            songs_to_delete:list = songs[1]
         else:
             # If not exists...
             # Generate JSON
@@ -147,21 +162,21 @@ def compare_and_download(url:str, p_output_dir:str=None, p_index_file_path:str=N
                 songs_to_download.append(song.get("webpage_url", None))
 
         # Rewrite index-file
-        index_object = create_json(metadata=meta)
+        index_object:dict = create_json(metadata=meta)
         print(f'JSON: {index_object}')
         with open(index_file_path, 'w') as outfile:
             json.dump(index_object, outfile)
 
     else:
         # Add single song to songs_to_download
-        folder_name = default_song_folder
+        folder_name:str = default_song_folder
         songs_to_download.append(meta.get("webpage_url", None))
 
     download_songs(urls=songs_to_download, output_folder=folder_name)
     delete_songs(songs_to_delete=songs_to_delete, output_folder=folder_name)
 
 # main and get arguments
-def main(argv):
+def main(argv:list):
    # special handling for first argument (URL), but show help if is first argument
    if argv[0] == "-h":
        print('autoYoutubeUpdater.py <pl_url/song_url> [-o <output_folder> -i <index_file]')
@@ -170,11 +185,11 @@ def main(argv):
        sys.exit('Missing URL. Usage: autoYoutubeUpdater.py <pl_url/song_url> [-o <output_folder> -i <index_file]')
 
    # setting empty values
-   offline_index_file = None
-   output_folder = None
+   offline_index_file:str = ""
+   output_folder:str = ""
 
    # setting URL
-   song_or_playlist_url = argv[0]
+   song_or_playlist_url:str = argv[0]
 
    # try getting other arguments
    try:
@@ -187,9 +202,9 @@ def main(argv):
          print('autoYoutubeUpdater.py <pl_url/song_url> [-o <output_folder> -i <index_file]')
          sys.exit()
       elif opt in ("-i", "--index_file"):
-         offline_index_file = arg
+         offline_index_file:str = arg
       elif opt in ("-o", "--output_folder"):
-         output_folder = arg
+         output_folder:str = arg
    print('Index file is "', offline_index_file)
    print('Output folder is "', output_folder)
    print('Song  folder is "', song_or_playlist_url)
